@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Incident Manager</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+
+<div class="container mt-5">
+    <h1 class="mb-4 text-center text-danger">🚨 Incident Management System</h1>
+
+    <!-- Create Incident Form -->
+    <div class="card mb-4 shadow">
+        <div class="card-header bg-danger text-white">
+            <h5>Create New Incident</h5>
+        </div>
+        <div class="card-body">
+            <input type="text" id="title" class="form-control mb-2" placeholder="Incident Title">
+            <textarea id="description" class="form-control mb-2" placeholder="Description"></textarea>
+            <select id="priority" class="form-control mb-2">
+                <option>Low</option>
+                <option selected>Medium</option>
+                <option>High</option>
+            </select>
+            <input type="text" id="assigned_to" class="form-control mb-2" placeholder="Assign To">
+            <button class="btn btn-danger w-100" onclick="createIncident()">Create Incident</button>
+        </div>
+    </div>
+
+    <!-- Incidents Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5>All Incidents</h5>
+        </div>
+        <div class="card-body">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>Title</th>
+                        <th>Priority</th>
+                        <th>Status</th>
+                        <th>Assigned To</th>
+                        <th>Created At</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="incidentTable">
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Load all incidents
+    async function loadIncidents() {
+        const res = await fetch('/incidents');
+        const incidents = await res.json();
+        const table = document.getElementById('incidentTable');
+        table.innerHTML = '';
+        incidents.forEach(i => {
+            table.innerHTML += `
+                <tr>
+                    <td>${i.id}</td>
+                    <td>${i.title}</td>
+                    <td><span class="badge bg-${i.priority === 'High' ? 'danger' : i.priority === 'Medium' ? 'warning' : 'success'}">${i.priority}</span></td>
+                    <td><span class="badge bg-${i.status === 'Resolved' ? 'success' : 'secondary'}">${i.status}</span></td>
+                    <td>${i.assigned_to}</td>
+                    <td>${i.created_at}</td>
+                    <td>
+                        <button class="btn btn-sm btn-success" onclick="resolveIncident(${i.id})">Resolve</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteIncident(${i.id})">Delete</button>
+                    </td>
+                </tr>`;
+        });
+    }
+
+    // Create incident
+    async function createIncident() {
+        const data = {
+            title: document.getElementById('title').value,
+            description: document.getElementById('description').value,
+            priority: document.getElementById('priority').value,
+            assigned_to: document.getElementById('assigned_to').value
+        };
+        await fetch('/incidents', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data)
+        });
+        loadIncidents();
+    }
+
+    // Resolve incident
+    async function resolveIncident(id) {
+        await fetch(`/incidents/${id}/resolve`, { method: 'PATCH' });
+        loadIncidents();
+    }
+
+    // Delete incident
+    async function deleteIncident(id) {
+        await fetch(`/incidents/${id}`, { method: 'DELETE' });
+        loadIncidents();
+    }
+
+    // Load on page start
+    loadIncidents();
+</script>
+
+</body>
+</html>
